@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScanBook · Pengolahan Citra Deteksi Tepi Buku</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root{
+    --bg:#f0f2f5;
+    --card:#ffffff;
+    --accent:#2563eb;
+    --accent-dark:#1d4ed8;
+    --txt:#111827;
+    --muted:#6b7280;
+    --border:#d1d5db;
+    --danger:#dc2626;
+    --success:#16a34a;
+    --tag-bg:#eff6ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--txt); min-height:100vh; padding:32px 18px 60px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  header{text-align:center;margin-bottom:36px;}
+  .logo{
+    display:inline-flex;align-items:center;gap:12px;
+    font-size:28px;font-weight:800;letter-spacing:-.5px;color:var(--txt);
+  }
+  .logo .ic{
+    width:46px;height:46px;border-radius:10px;
+    background:var(--accent);
+    display:grid;place-items:center;color:#fff;font-size:20px;
+  }
+  header p{color:var(--muted);margin-top:8px;font-size:14px;}
+
+  .card{
+    background:var(--card);
+    border:1.5px solid var(--border);
+    border-radius:10px;
+    padding:24px;
+  }
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  @media(max-width:880px){.grid{grid-template-columns:1fr;}}
+
+  .drop{
+    border:2px dashed var(--border);border-radius:8px;padding:40px 20px;
+    text-align:center;cursor:pointer;transition:.15s;background:#fafafa;
+  }
+  .drop:hover,.drop.drag{border-color:var(--accent);background:var(--tag-bg);}
+  .drop .big{font-size:34px;margin-bottom:10px;color:var(--accent);}
+  .drop b{font-size:15px;color:var(--txt);}
+  .drop small{color:var(--muted);font-size:13px;}
+  input[type=file]{display:none;}
+
+  .preview-img{width:100%;border-radius:8px;border:1.5px solid var(--border);display:block;}
+  .section-title{
+    font-size:11px;text-transform:uppercase;letter-spacing:1.5px;
+    color:var(--muted);margin-bottom:14px;font-weight:700;
+    display:flex;align-items:center;gap:8px;
+  }
+  .section-title::before{
+    content:"";width:3px;height:16px;border-radius:2px;background:var(--accent);
+  }
+
+  .btn{
+    border:none;border-radius:6px;padding:12px 20px;font-size:14px;font-weight:600;
+    cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn-main{background:var(--accent);color:#fff;width:100%;justify-content:center;}
+  .btn-main:hover{background:var(--accent-dark);}
+  .btn-main:disabled{background:#93c5fd;cursor:not-allowed;}
+  .btn-ghost{background:#fff;border:1.5px solid var(--border);color:var(--txt);}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+  .tab{
+    padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;
+    background:#f3f4f6;border:1.5px solid var(--border);color:var(--muted);
+    transition:.15s;
+  }
+  .tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .tab:hover:not(.active){border-color:var(--accent);color:var(--accent);}
+
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+    padding:5px 12px;border-radius:4px;}
+  .badge.ok{background:#dcfce7;color:var(--success);}
+  .badge.no{background:#fee2e2;color:var(--danger);}
+
+  .slider-row{margin:16px 0;}
+  .slider-row label{display:flex;justify-content:space-between;font-size:13px;font-weight:500;margin-bottom:8px;}
+  .slider-row label b{color:var(--accent);font-variant-numeric:tabular-nums;}
+  input[type=range]{
+    -webkit-appearance:none;width:100%;height:5px;border-radius:4px;
+    background:var(--border);outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:2px solid #fff;
+    box-shadow:0 0 0 2px var(--accent);
+  }
+  .actions{display:flex;gap:10px;margin-top:20px;}
+  .actions .btn{flex:1;justify-content:center;}
+
+  .spinner{display:none;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);
+    border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading .spinner{display:inline-block;}
+
+  .hidden{display:none;}
+  .hint{color:var(--muted);font-size:13px;margin-top:10px;line-height:1.6;}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><span class="ic"><i class="fa-solid fa-book-open"></i></span> ScanBook</div>
+    <p>Pengolahan Citra · Deteksi Tepi Buku · Efek Scanner · Kontras &amp; Saturasi</p>
+  </header>
+
+  <!-- STEP 1: UPLOAD -->
+  <div class="card" style="margin-bottom:22px;">
+    <div class="section-title">1 · Unggah Gambar Buku</div>
+    <div class="grid">
+      <div>
+        <div class="drop" id="drop">
+          <div class="big"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+          <div><b>Klik atau seret gambar ke sini</b></div>
+          <small>Format JPG / PNG · maksimal 16 MB</small>
+        </div>
+        <input type="file" id="file" accept="image/*">
+        <button class="btn btn-main" id="scanBtn" style="margin-top:16px;" disabled>
+          <span class="spinner"></span><i class="fa-solid fa-magnifying-glass"></i><span class="lbl">Deteksi Tepi &amp; Scan</span>
+        </button>
+        <p class="hint">Sistem mendeteksi 4 sudut buku dengan Canny + kontur, lalu mengoreksi perspektif agar lurus seperti hasil scanner.</p>
+      </div>
+      <div>
+        <div class="section-title">Pratinjau</div>
+        <img id="origImg" class="preview-img" alt="Belum ada gambar"
+             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='280'%3E%3Crect width='100%25' height='100%25' fill='%231c2230'/%3E%3Ctext x='50%25' y='50%25' fill='%238b949e' font-family='sans-serif' font-size='15' text-anchor='middle' dy='.3em'%3EPratinjau gambar%3C/text%3E%3C/svg%3E">
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: HASIL -->
+  <div class="card hidden" id="resultCard" style="margin-bottom:22px;">
+    <div class="section-title" style="justify-content:space-between;display:flex;">
+      <span style="display:flex;align-items:center;gap:8px;"><span style="width:3px;height:16px;border-radius:2px;background:var(--accent);"></span>2 · Hasil Deteksi</span>
+      <span id="statusBadge"></span>
+    </div>
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-key="overlay"><i class="fa-solid fa-vector-square"></i> Sesuaikan Tepi</div>
+      <div class="tab" data-key="nobg"><i class="fa-solid fa-eraser"></i> Tanpa Latar</div>
+      <div class="tab" data-key="edges"><i class="fa-solid fa-bolt"></i> Peta Tepi (Canny)</div>
+      <div class="tab" data-key="scanned"><i class="fa-solid fa-file-image"></i> Hasil Scan</div>
+      <div class="tab" data-key="scan_bw"><i class="fa-solid fa-print"></i> Mode Scanner B/W</div>
+    </div>
+
+    <!-- Canvas interaktif untuk tab overlay -->
+    <div id="canvasWrap" style="position:relative;">
+      <canvas id="cornerCanvas" style="width:100%;border-radius:8px;border:1.5px solid var(--border);display:block;cursor:crosshair;touch-action:none;"></canvas>
+      <div class="tabs" id="orientCanvasTabs" style="margin-top:10px;">
+        <button class="btn btn-ghost" data-rot="ccw" title="Putar kiri 90°"><i class="fa-solid fa-rotate-left"></i></button>
+        <button class="btn btn-ghost" data-rot="cw" title="Putar kanan 90°"><i class="fa-solid fa-rotate-right"></i></button>
+        <button class="btn btn-ghost" data-rot="180" title="Putar 180°"><i class="fa-solid fa-arrows-rotate"></i></button>
+        <button class="btn btn-ghost" data-rot="fliph" title="Cermin horizontal"><i class="fa-solid fa-arrows-left-right"></i></button>
+        <button class="btn btn-ghost" data-rot="flipv" title="Cermin vertikal"><i class="fa-solid fa-arrows-up-down"></i></button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn btn-main" id="applyWarpBtn" style="flex:1;"><i class="fa-solid fa-crop-simple"></i> Terapkan Koreksi</button>
+        <button class="btn btn-ghost" id="resetCornersBtn"><i class="fa-solid fa-rotate-left"></i> Reset Titik</button>
+      </div>
+      <p class="hint">Seret titik sudut biru untuk menyesuaikan area dokumen. Gunakan tombol orientasi untuk memutar/mencerminkan gambar bila foto miring, lalu klik <b>Terapkan Koreksi</b>.</p>
+    </div>
+
+    <!-- Gambar biasa untuk tab lain -->
+    <img id="resultImg" class="preview-img" alt="hasil" style="display:none;">
+    <p class="hint" id="resultHint"></p>
+  </div>
+
+  <!-- STEP 3: ADJUST -->
+  <div class="card hidden" id="adjustCard">
+    <div class="section-title">3 · Atur Kontras &amp; Saturasi Warna</div>
+    <div class="grid">
+      <div>
+        <img id="adjImg" class="preview-img" alt="adjusted">
+      </div>
+      <div>
+        <div class="section-title" style="margin-bottom:8px;">Orientasi Gambar</div>
+        <div class="tabs" id="orientTabs" style="margin-bottom:18px;">
+          <button class="btn btn-ghost" data-rot="ccw" title="Putar kiri 90°"><i class="fa-solid fa-rotate-left"></i></button>
+          <button class="btn btn-ghost" data-rot="cw" title="Putar kanan 90°"><i class="fa-solid fa-rotate-right"></i></button>
+          <button class="btn btn-ghost" data-rot="180" title="Putar 180°"><i class="fa-solid fa-arrows-rotate"></i></button>
+          <button class="btn btn-ghost" data-rot="fliph" title="Cermin horizontal"><i class="fa-solid fa-arrows-left-right"></i></button>
+          <button class="btn btn-ghost" data-rot="flipv" title="Cermin vertikal"><i class="fa-solid fa-arrows-up-down"></i></button>
+        </div>
+
+        <div class="section-title" style="margin-bottom:8px;">Mode Output</div>
+        <div class="tabs" id="modeTabs" style="margin-bottom:18px;">
+          <div class="tab active" data-mode="color"><i class="fa-solid fa-palette"></i> Berwarna</div>
+          <div class="tab" data-mode="gray"><i class="fa-solid fa-circle-half-stroke"></i> Grayscale</div>
+          <div class="tab" data-mode="bw"><i class="fa-solid fa-print"></i> Hitam-Putih Scanner</div>
+        </div>
+
+        <div class="slider-row">
+          <label>Kontras <b id="cVal">1.00×</b></label>
+          <input type="range" id="contrast" min="0.5" max="3" step="0.05" value="1">
+        </div>
+        <div class="slider-row" id="satRow">
+          <label>Saturasi <b id="sVal">1.00×</b></label>
+          <input type="range" id="saturation" min="0" max="3" step="0.05" value="1">
+        </div>
+        <div class="slider-row">
+          <label>Kecerahan <b id="bVal">0</b></label>
+          <input type="range" id="brightness" min="-100" max="100" step="1" value="0">
+        </div>
+        <div class="slider-row hidden" id="threshRow">
+          <label>Ketajaman B/W <b id="tVal">10</b></label>
+          <input type="range" id="threshold" min="3" max="25" step="1" value="10">
+        </div>
+        <div class="actions">
+          <button class="btn btn-ghost" id="resetBtn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+          <button class="btn btn-main" id="dlBtn"><i class="fa-solid fa-download"></i> Unduh Hasil</button>
+        </div>
+        <p class="hint" id="modeHint">Kontras &amp; kecerahan diterapkan langsung pada piksel, saturasi diatur lewat kanal S pada ruang warna HSV.</p>
+        <p class="hint">Pintasan: <b>R</b> putar kanan · <b>Shift+R</b> putar kiri · <b>F</b> cermin horizontal.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>ScanBook · Flask + OpenCV · Pengolahan Citra Digital</footer>
+</div>
+
+<script>
+let originalB64=null;     // gambar asli yang diunggah
+let scannedB64=null;      // hasil scan berwarna (basis untuk adjust)
+let results={};           // semua hasil dari /scan
+
+const $=id=>document.getElementById(id);
+const drop=$('drop'), file=$('file');
+
+// ---- Upload handlers ----
+drop.onclick=()=>file.click();
+['dragover','dragenter'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('drag');}));
+['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('drag');}));
+drop.addEventListener('drop',ev=>{if(ev.dataTransfer.files.length)loadFile(ev.dataTransfer.files[0]);});
+file.onchange=()=>{if(file.files.length)loadFile(file.files[0]);};
+
+function loadFile(f){
+  if(!f.type.startsWith('image/')){alert('Mohon unggah file gambar.');return;}
+  const r=new FileReader();
+  r.onload=()=>{originalB64=r.result;$('origImg').src=r.result;$('scanBtn').disabled=false;};
+  r.readAsDataURL(f);
+}
+
+// ---- Scan ----
+$('scanBtn').onclick=async()=>{
+  if(!originalB64)return;
+  const btn=$('scanBtn');btn.classList.add('loading');btn.disabled=true;btn.querySelector('.lbl').textContent='Memproses...';
+  try{
+    const res=await fetch('/scan',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({image:originalB64})});
+    const d=await res.json();
+    if(d.error){alert(d.error);return;}
+    results=d; scannedB64=d.scanned;
+    $('resultCard').classList.remove('hidden');
+    $('adjustCard').classList.remove('hidden');
+
+    const isML = (d.method||'').startsWith('ml');
+    const methodBadge = isML
+      ? '<span class="badge ok"><i class="fa-solid fa-robot"></i> Model ML ('+d.method.split(':')[1]+')</span> '
+      : '<span class="badge no" style="background:#fef3c7;color:#92400e;"><i class="fa-solid fa-gears"></i> Metode klasik</span> ';
+    const bgBadge = d.bg_removed
+      ? '<span class="badge ok"><i class="fa-solid fa-eraser"></i> Latar dihapus</span> '
+      : '';
+    $('statusBadge').innerHTML = methodBadge + bgBadge + (d.detected
+      ? '<span class="badge ok"><i class="fa-solid fa-circle-check"></i> Tepi buku terdeteksi</span>'
+      : '<span class="badge no"><i class="fa-solid fa-triangle-exclamation"></i> Tepi tidak jelas — gunakan gambar utuh</span>');
+
+    initCanvas(originalB64, d.corners, d.orig_size[0], d.orig_size[1]);
+    showTab('overlay');
+    // siapkan tahap adjust dengan hasil scan
+    $('adjImg').src=scannedB64;
+    resetSliders();
+    $('adjustCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(e){alert('Gagal memproses: '+e);}
+  finally{btn.classList.remove('loading');btn.disabled=false;btn.querySelector('.lbl').textContent='Deteksi Tepi & Scan';}
+};
+
+// ---- Canvas corner editor ----
+const cvsEl = $('cornerCanvas');
+const cvsCtx = cvsEl.getContext('2d');
+let cvsImg = new Image();
+let corners = [];          // [[x,y],...] in original image coords
+let origCorners = [];      // backup for reset
+let origW = 0, origH = 0;
+let drawScale = 1;
+let dragging = -1;
+const HANDLE_R = 12;
+
+function initCanvas(b64, pts, w, h) {
+  origW = w; origH = h;
+  corners = pts.map(p => [...p]);
+  origCorners = pts.map(p => [...p]);
+  const MAX = 1200;
+  drawScale = Math.min(1, MAX / w);
+  cvsEl.width  = Math.round(w * drawScale);
+  cvsEl.height = Math.round(h * drawScale);
+  cvsImg = new Image();
+  cvsImg.onload = cvsDraw;
+  cvsImg.src = b64;
+}
+
+function cvsDraw() {
+  cvsCtx.clearRect(0, 0, cvsEl.width, cvsEl.height);
+  cvsCtx.drawImage(cvsImg, 0, 0, cvsEl.width, cvsEl.height);
+  if (!corners.length) return;
+
+  const pts = corners.map(([x,y]) => [x*drawScale, y*drawScale]);
+
+  // Polygon fill + stroke
+  cvsCtx.beginPath();
+  cvsCtx.moveTo(pts[0][0], pts[0][1]);
+  pts.slice(1).forEach(p => cvsCtx.lineTo(p[0], p[1]));
+  cvsCtx.closePath();
+  cvsCtx.fillStyle = 'rgba(37,99,235,0.12)';
+  cvsCtx.fill();
+  cvsCtx.strokeStyle = '#2563eb';
+  cvsCtx.lineWidth = 2;
+  cvsCtx.stroke();
+
+  // Handles
+  const labels = ['TL','TR','BR','BL'];
+  pts.forEach(([x,y], i) => {
+    cvsCtx.beginPath();
+    cvsCtx.arc(x, y, HANDLE_R, 0, Math.PI*2);
+    cvsCtx.fillStyle = '#2563eb';
+    cvsCtx.fill();
+    cvsCtx.strokeStyle = '#fff';
+    cvsCtx.lineWidth = 2;
+    cvsCtx.stroke();
+    cvsCtx.fillStyle = '#fff';
+    cvsCtx.font = 'bold 10px sans-serif';
+    cvsCtx.textAlign = 'center';
+    cvsCtx.textBaseline = 'middle';
+    cvsCtx.fillText(labels[i], x, y);
+  });
+}
+
+function getCanvasPt(e) {
+  const src = e.touches ? e.touches[0] : e;
+  const rect = cvsEl.getBoundingClientRect();
+  const sx = cvsEl.width  / rect.width;
+  const sy = cvsEl.height / rect.height;
+  return [(src.clientX - rect.left)*sx, (src.clientY - rect.top)*sy];
+}
+
+function startDrag(e) {
+  e.preventDefault();
+  const [mx, my] = getCanvasPt(e);
+  dragging = corners.findIndex(([x,y]) => {
+    const dx = x*drawScale - mx, dy = y*drawScale - my;
+    return Math.sqrt(dx*dx+dy*dy) < HANDLE_R*1.5;
+  });
+}
+function moveDrag(e) {
+  if (dragging < 0) return;
+  e.preventDefault();
+  const [mx, my] = getCanvasPt(e);
+  corners[dragging] = [
+    Math.max(0, Math.min(origW, mx/drawScale)),
+    Math.max(0, Math.min(origH, my/drawScale))
+  ];
+  cvsDraw();
+}
+function endDrag() { dragging = -1; }
+
+cvsEl.addEventListener('mousedown', startDrag);
+cvsEl.addEventListener('mousemove', moveDrag);
+cvsEl.addEventListener('mouseup', endDrag);
+cvsEl.addEventListener('mouseleave', endDrag);
+cvsEl.addEventListener('touchstart', startDrag, {passive:false});
+cvsEl.addEventListener('touchmove', moveDrag,  {passive:false});
+cvsEl.addEventListener('touchend', endDrag);
+
+$('resetCornersBtn').onclick = () => { corners = origCorners.map(p=>[...p]); cvsDraw(); };
+
+// ---- Orientasi pada editor sudut: putar gambar asli + remap titik ----
+function remapPoint(x, y, action, w, h) {
+  switch (action) {
+    case 'cw':    return [h - 1 - y, x];        // 90° searah jarum jam
+    case 'ccw':   return [y, w - 1 - x];        // 90° berlawanan
+    case '180':   return [w - 1 - x, h - 1 - y];
+    case 'fliph': return [w - 1 - x, y];
+    case 'flipv': return [x, h - 1 - y];
+    default:      return [x, y];
+  }
+}
+$('orientCanvasTabs').addEventListener('click', async e => {
+  const t = e.target.closest('button[data-rot]'); if (!t) return;
+  if (!originalB64) return;
+  const action = t.dataset.rot;
+  const btns = document.querySelectorAll('#orientCanvasTabs button');
+  btns.forEach(b => b.disabled = true);
+  try {
+    const res = await fetch('/rotate', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({image: originalB64, action})
+    });
+    const d = await res.json();
+    if (d.error) { alert(d.error); return; }
+    originalB64 = d.result;
+    $('origImg').src = originalB64;
+    // remap titik sudut ke koordinat gambar baru
+    const newCorners  = corners.map(([x,y]) => remapPoint(x, y, action, origW, origH));
+    // dimensi baru: 90° menukar lebar/tinggi
+    const swap = (action === 'cw' || action === 'ccw');
+    const nw = swap ? origH : origW;
+    const nh = swap ? origW : origH;
+    initCanvas(originalB64, newCorners, nw, nh);
+    origCorners = newCorners.map(p => [...p]);
+  } catch (err) { alert('Gagal memutar: ' + err); }
+  finally { btns.forEach(b => b.disabled = false); }
+});
+
+$('applyWarpBtn').onclick = async () => {
+  const btn = $('applyWarpBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+  try {
+    const res = await fetch('/warp', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({image: originalB64, corners})
+    });
+    const d = await res.json();
+    if (d.error) { alert(d.error); return; }
+    results.scanned  = d.scanned;
+    results.scan_bw  = d.scan_bw;
+    scannedB64 = d.scanned;
+    $('adjImg').src  = scannedB64;
+    resetSliders();
+    showTab('scanned');
+  } catch(e) { alert('Gagal: '+e); }
+  finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-crop-simple"></i> Terapkan Koreksi';
+  }
+};
+
+// ---- Tabs ----
+const hints={
+  nobg:'Latar dihapus otomatis dengan GrabCut sebelum deteksi, sehingga tepi dokumen lebih bersih dan akurat.',
+  edges:'Peta tepi hasil algoritma Canny — dasar untuk menemukan kontur dokumen.',
+  scanned:'Buku setelah koreksi perspektif (four-point transform), tampak lurus seperti di-scan.',
+  scan_bw:'Mode scanner hitam-putih dengan adaptive threshold, cocok untuk teks/dokumen.'
+};
+$('tabs').addEventListener('click',e=>{
+  const t=e.target.closest('.tab'); if(!t)return; showTab(t.dataset.key);
+});
+function showTab(key){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.key===key));
+  const isOverlay = key === 'overlay';
+  $('canvasWrap').style.display = isOverlay ? 'block' : 'none';
+  $('resultImg').style.display  = isOverlay ? 'none'  : 'block';
+  if (!isOverlay) {
+    $('resultImg').src = results[key];
+    $('resultHint').textContent = hints[key]||'';
+  } else {
+    $('resultHint').textContent = '';
+  }
+}
+
+// ---- Adjust (debounced) ----
+let adjustMode='color';
+let timer=null;
+function scheduleAdjust(){clearTimeout(timer);timer=setTimeout(applyAdjust,120);}
+async function applyAdjust(){
+  if(!scannedB64)return;
+  const body={image:scannedB64, mode:adjustMode,
+    contrast:$('contrast').value, saturation:$('saturation').value,
+    brightness:$('brightness').value, threshold:$('threshold').value};
+  const res=await fetch('/adjust',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await res.json();
+  if(d.result)$('adjImg').src=d.result;
+}
+['contrast','saturation','brightness','threshold'].forEach(id=>{
+  $(id).addEventListener('input',()=>{
+    $('cVal').textContent=parseFloat($('contrast').value).toFixed(2)+'×';
+    $('sVal').textContent=parseFloat($('saturation').value).toFixed(2)+'×';
+    $('bVal').textContent=$('brightness').value;
+    $('tVal').textContent=$('threshold').value;
+    scheduleAdjust();
+  });
+});
+
+// ---- Mode output (Berwarna / Grayscale / B/W Scanner) ----
+const modeHints={
+  color:'Kontras & kecerahan diterapkan langsung pada piksel, saturasi diatur lewat kanal S pada ruang warna HSV.',
+  gray:'Grayscale dengan pencahayaan diratakan (background division) agar bersih merata.',
+  bw:'Hitam-putih ala scanner: latar diputihkan lalu adaptive threshold. Atur slider Ketajaman B/W untuk mengontrol ketebalan teks.'
+};
+$('modeTabs').addEventListener('click',e=>{
+  const t=e.target.closest('.tab'); if(!t)return;
+  adjustMode=t.dataset.mode;
+  document.querySelectorAll('#modeTabs .tab').forEach(x=>x.classList.toggle('active',x===t));
+  // tampilkan slider sesuai mode
+  $('satRow').classList.toggle('hidden', adjustMode!=='color');
+  $('threshRow').classList.toggle('hidden', adjustMode!=='bw');
+  $('modeHint').textContent=modeHints[adjustMode];
+  applyAdjust();
+});
+
+// ---- Orientasi gambar (putar / cermin) pada hasil scan ----
+async function rotateScanned(action){
+  if(!scannedB64)return;
+  const btns=document.querySelectorAll('#orientTabs button');
+  btns.forEach(b=>b.disabled=true);
+  try{
+    const res=await fetch('/rotate',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({image:scannedB64, action})});
+    const d=await res.json();
+    if(d.error){alert(d.error);return;}
+    scannedB64=d.result;
+    results.scanned=d.result;     // jaga konsistensi tab "Hasil Scan"
+    applyAdjust();                // terapkan ulang kontras/saturasi pada orientasi baru
+  }catch(err){alert('Gagal memutar: '+err);}
+  finally{btns.forEach(b=>b.disabled=false);}
+}
+$('orientTabs').addEventListener('click', e=>{
+  const t=e.target.closest('button[data-rot]'); if(!t)return;
+  rotateScanned(t.dataset.rot);
+});
+
+// Pintasan keyboard: R = putar kanan, Shift+R = putar kiri, F = cermin horizontal
+document.addEventListener('keydown', e=>{
+  if($('adjustCard').classList.contains('hidden'))return;
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||e.target.isContentEditable)return;
+  const k=e.key.toLowerCase();
+  if(k==='r'){e.preventDefault(); rotateScanned(e.shiftKey?'ccw':'cw');}
+  else if(k==='f'){e.preventDefault(); rotateScanned('fliph');}
+});
+
+function resetSliders(){
+  adjustMode='color';
+  document.querySelectorAll('#modeTabs .tab').forEach(x=>x.classList.toggle('active',x.dataset.mode==='color'));
+  $('satRow').classList.remove('hidden');
+  $('threshRow').classList.add('hidden');
+  $('modeHint').textContent=modeHints.color;
+  $('contrast').value=1;$('saturation').value=1;$('brightness').value=0;$('threshold').value=10;
+  $('cVal').textContent='1.00×';$('sVal').textContent='1.00×';$('bVal').textContent='0';$('tVal').textContent='10';
+  if(scannedB64)$('adjImg').src=scannedB64;
+}
+$('resetBtn').onclick=resetSliders;
+
+$('dlBtn').onclick=()=>{
+  const a=document.createElement('a');
+  const suffix={color:'berwarna',gray:'grayscale',bw:'hitamputih'}[adjustMode]||'hasil';
+  a.href=$('adjImg').src; a.download='scanbook_'+suffix+'.png'; a.click();
+};
+</script>
+</body>
+</html>

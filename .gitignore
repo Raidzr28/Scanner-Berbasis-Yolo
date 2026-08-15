@@ -1,0 +1,96 @@
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ---------------------------------------------------------------------------
+# Virtual environments
+# ---------------------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# ---------------------------------------------------------------------------
+# Secrets & local configuration  (JANGAN pernah di-commit)
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.json
+credentials.json
+config.local.*
+instance/
+
+# ---------------------------------------------------------------------------
+# Dataset hasil generate (regenerate: python ml/make_dataset.py)
+# data.yaml & *.cache berisi path absolut C:\Users\<nama>\... -> bocor identitas
+# ---------------------------------------------------------------------------
+datasets/
+*.cache
+
+# ---------------------------------------------------------------------------
+# Artefak training YOLO
+# args.yaml + best.pt/last.pt menyimpan path absolut mesin lokal
+# ---------------------------------------------------------------------------
+runs/
+ml/runs/
+wandb/
+lightning_logs/
+
+# Bobot pra-terlatih COCO: diunduh otomatis oleh ultralytics, jangan di-commit
+yolov8*.pt
+yolo11*.pt
+yolov5*.pt
+
+# ---------------------------------------------------------------------------
+# Upload & output pengguna (bisa berisi dokumen pribadi hasil scan)
+# ---------------------------------------------------------------------------
+uploads/
+results/
+static/uploads/
+static/results/
+output/
+*.log
+
+# Folder rusak dari brace-expansion bash di Windows
+{templates,static,uploads,results}/
+
+# ---------------------------------------------------------------------------
+# Editor / IDE
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.claude/
+
+# ---------------------------------------------------------------------------
+# OS
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# ---------------------------------------------------------------------------
+# Notebook & cache tools
+# ---------------------------------------------------------------------------
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+graphify-out/
