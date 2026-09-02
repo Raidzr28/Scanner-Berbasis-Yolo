@@ -1,323 +1,485 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<!--
-THESIS: A local scan tool should feel like it ships inside macOS, not like an admin panel: frosted-glass panels floating over a soft living wallpaper, refusing the flat blue-corporate SaaS default this category always reaches for.
-OWN-WORLD: Apple system typography (-apple-system stack), 24-28px glass cards (blur+saturate over a drifting pastel gradient), iOS segmented controls and sliders, #0071e3 accent, restrained neutral-plus-one-accent palette.
-STORY: Upload a book photo, trust the ML/CV corner detection or drag it right, judge the scan on true-neutral chrome, download.
-FIRST VIEWPORT: centered glass-tile brand mark over the drifting mesh, straight into the upload card — no marketing hero, the tool starts immediately.
-FORM: brief-pinned (user specified "modern simple apple like UI with glassmorphism"); no direction roll — this world is the brief.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
--->
+<!-- ScanBook · single-file Flask template (inline CSS/JS, no build step). -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#eef2f7">
+<meta name="theme-color" content="#f4f1e9">
 <title>ScanBook · Pengolahan Citra Deteksi Tepi Buku</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
   :root{
-    --bg-0:#eef2f7;
-    --accent:#0071e3;
-    --accent-2:#0a84ff;
-    --accent-dark:#0058b0;
-    --accent-soft:rgba(0,113,227,.12);
-    --ink:#1d1d1f;
-    --ink-muted:#6e6e73;
-    --ink-faint:#a1a1a6;
-    --danger:#b8000f;
-    --danger-soft:rgba(255,59,48,.13);
-    --success:#146c2e;
-    --success-soft:rgba(52,199,89,.16);
-    --warn:#8a4f00;
-    --warn-soft:rgba(255,159,10,.18);
-    --glass:rgba(255,255,255,.62);
-    --glass-strong:rgba(255,255,255,.86);
-    --glass-border:rgba(255,255,255,.75);
-    --hairline:rgba(0,0,0,.08);
-    --track:rgba(118,118,128,.16);
-    --shadow-sm:0 1px 2px rgba(15,23,42,.05), 0 2px 8px rgba(15,23,42,.05);
-    --shadow-md:0 10px 30px -8px rgba(15,23,42,.14), 0 2px 8px rgba(15,23,42,.06);
-    --shadow-lg:0 26px 60px -14px rgba(15,23,42,.24), 0 8px 22px rgba(15,23,42,.08);
-    --r-lg:26px;
-    --r-md:16px;
-    --r-sm:11px;
-    --ease:cubic-bezier(.4,0,.2,1);
-    --ease-spring:cubic-bezier(.16,1,.3,1);
-    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --screen:#fbfaf6;
+    --room:#f4f1e9;
+    --room-2:#eceadf;
+    --ink:#161512;
+    --teal:#1c3f3a;
+    --teal-2:#2b5a52;
+    --teal-wash:rgba(28,63,58,.07);
+    --teal-line:rgba(28,63,58,.30);
+    --amber:#c9791f;
+    --alert:#b3122a;
+    --ease:cubic-bezier(.2,0,0,1);
+    --sans:'Hanken Grotesk','Segoe UI',system-ui,-apple-system,sans-serif;
+    --xcross:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Cg stroke='%231c3f3a' stroke-width='1.2'%3E%3Cline x1='5.5' y1='.5' x2='5.5' y2='10.5'/%3E%3Cline x1='.5' y1='5.5' x2='10.5' y2='5.5'/%3E%3C/g%3E%3C/svg%3E");
   }
   *{box-sizing:border-box;margin:0;padding:0;}
-  html{overflow-x:hidden;}
+  html{overflow-x:hidden;color-scheme:light;}
   body{
-    font-family:var(--font);
-    background:var(--bg-0);
+    font:400 15px/1.55 var(--sans);
+    background:var(--room);
     color:var(--ink);
     min-height:100vh;
-    padding:44px 20px 90px;
-    position:relative;
     -webkit-font-smoothing:antialiased;
     text-rendering:optimizeLegibility;
-    line-height:1.5;
   }
-  body::before,body::after{
-    content:"";position:fixed;border-radius:50%;filter:blur(95px);
-    z-index:-1;opacity:.55;pointer-events:none;
-    animation:drift 38s ease-in-out infinite alternate;
+  ::selection{background:var(--teal);color:var(--screen);}
+  :focus-visible{outline:2px solid var(--teal);outline-offset:2px;}
+  input,textarea{caret-color:var(--teal);}
+  ::-webkit-scrollbar{width:12px;height:12px;}
+  ::-webkit-scrollbar-track{background:var(--room);}
+  ::-webkit-scrollbar-thumb{background:var(--teal-line);border:3px solid var(--room);}
+  ::-webkit-scrollbar-thumb:hover{background:var(--teal);}
+
+  /* keystone thesis, held faint in the right margin */
+  .keystone-mark{
+    position:fixed;right:24px;top:150px;width:270px;
+    z-index:0;pointer-events:none;opacity:.07;color:var(--teal);display:none;
   }
-  body::before{
-    width:620px;height:620px;top:-200px;left:-140px;
-    background:radial-gradient(circle at 30% 30%,#8fd6ff,#5aa2ff 55%,transparent 75%);
+  @media(min-width:1160px){.keystone-mark{display:block;}}
+
+  /* projector-arm bar */
+  .regbar{border-bottom:1.5px solid var(--teal);position:relative;z-index:2;background:var(--room);}
+  .regbar-in{
+    max-width:1140px;margin:0 auto;padding:15px 22px;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
   }
-  body::after{
-    width:560px;height:560px;bottom:-180px;right:-120px;
-    background:radial-gradient(circle at 60% 40%,#f3b6ff,#c084fc 55%,transparent 75%);
-    animation-delay:-19s;
+  .regbar::after{
+    content:"";position:absolute;right:22px;bottom:-1px;width:34px;height:7px;
+    background:repeating-linear-gradient(90deg,var(--teal) 0 1.5px,transparent 1.5px 9px);
   }
-  @keyframes drift{0%{transform:translate(0,0) scale(1);}100%{transform:translate(46px,34px) scale(1.08);}}
-  @media (prefers-reduced-motion:reduce){
-    body::before,body::after{animation:none;}
-    *{animation-duration:.001ms !important;animation-iteration-count:1 !important;}
+  @media(max-width:560px){.regbar::after{display:none;}}
+  .wordmark{
+    display:inline-flex;align-items:center;gap:10px;
+    font:800 21px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--teal);
+    transform:perspective(340px) rotateY(-13deg);transform-origin:left center;
+  }
+  .lamp{
+    width:11px;height:11px;border-radius:50%;background:var(--amber);flex:0 0 auto;
+    border:1.5px solid #8f5415;
   }
 
-  ::selection{background:var(--accent);color:#fff;}
-  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px;}
-  ::-webkit-scrollbar{width:10px;height:10px;}
-  ::-webkit-scrollbar-track{background:transparent;}
-  ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.2);border-radius:20px;border:2px solid transparent;background-clip:padding-box;}
-  ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.3);background-clip:padding-box;}
+  .wrap{max-width:1140px;margin:0 auto;padding:32px 22px 78px;position:relative;z-index:1;}
+  #homeView{max-width:760px;}
+  #scanView > .sheet,#scanView > .plot,#historyView .sheet{max-width:920px;}
 
-  .wrap{max-width:1120px;margin:0 auto;}
-
-  header.app-header{text-align:center;margin-bottom:42px;}
-  .brand{display:inline-flex;flex-direction:column;align-items:center;gap:14px;}
-  .brand-icon{
-    width:58px;height:58px;border-radius:18px;
-    background:linear-gradient(160deg,var(--accent-2),var(--accent-dark));
-    display:grid;place-items:center;color:#fff;font-size:24px;
-    box-shadow:var(--shadow-md);
+  /* slide-selector: nav is a connected strip; result/mode tabs are wrapping chips */
+  .nav{
+    display:flex;border:1.5px solid var(--teal);width:fit-content;max-width:100%;
+    overflow-x:auto;scrollbar-width:none;
   }
-  .brand-name{font-size:32px;font-weight:700;letter-spacing:-.02em;color:var(--ink);}
-  header.app-header p{color:var(--ink-muted);font-size:15px;max-width:480px;margin:0 auto;}
-
-  .card{
-    background:var(--glass);
-    backdrop-filter:blur(24px) saturate(160%);
-    -webkit-backdrop-filter:blur(24px) saturate(160%);
-    border:1px solid var(--glass-border);
-    border-radius:var(--r-lg);
-    padding:30px;
-    box-shadow:var(--shadow-md);
-    animation:cardIn .5s var(--ease-spring) both;
+  .nav::-webkit-scrollbar{display:none;}
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;}
+  .nav-btn,.tab{
+    flex:0 0 auto;border:0;background:transparent;font:800 15px/1 var(--sans);
+    text-transform:uppercase;letter-spacing:.02em;color:var(--teal);cursor:pointer;
+    padding:8px 13px;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;
+    transition:background .12s var(--ease),color .12s var(--ease);
   }
-  .card + .card{margin-top:24px;}
-  @keyframes cardIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+  .nav-btn{border-left:1.5px solid var(--teal);}
+  .nav-btn:first-child{border-left:0;}
+  .tab{border:1.5px solid var(--teal);}
+  .nav-btn.active,.tab.active{background:var(--teal);color:var(--screen);border-color:var(--teal);}
+  @media(hover:hover){.nav-btn:hover:not(.active),.tab:hover:not(.active){background:var(--teal-wash);}}
+  /* the wide result-tab row rejoins into one slide-selector strip where it fits */
+  @media(min-width:880px){
+    #tabs{border:1.5px solid var(--teal);gap:0;}
+    #tabs .tab{border:0;border-left:1.5px solid var(--teal);}
+    #tabs .tab:first-child{border-left:0;}
+  }
+
+  /* content sheets = screen-room panels */
+  .sheet{
+    background:var(--room);border:1.5px solid var(--teal);padding:26px 28px;position:relative;
+  }
+  .sheet::after{
+    content:"";position:absolute;top:13px;right:14px;width:17px;height:7px;
+    background:repeating-linear-gradient(90deg,var(--teal) 0 1.5px,transparent 1.5px 5.5px);
+  }
+  .sheet.projecting{animation:projectIn .18s var(--ease) both;}
+  .sheet + .sheet{margin-top:22px;}
+  @keyframes projectIn{
+    from{opacity:0;transform:perspective(900px) rotateX(1deg) scale(.985);}
+    to{opacity:1;transform:none;}
+  }
+
+  .plate-head{
+    display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;row-gap:9px;
+    margin-bottom:20px;font:800 15px/1.3 var(--sans);color:var(--teal);letter-spacing:-.005em;
+  }
+  .plate-head.between{justify-content:space-between;align-items:flex-start;}
+  .plate-head .lead{display:flex;align-items:baseline;gap:11px;white-space:nowrap;}
+  #statusBadge{display:flex;flex-wrap:wrap;gap:5px 14px;justify-content:flex-end;}
+  .plate-no{
+    font-variant-numeric:tabular-nums;font-weight:800;color:var(--teal);
+    display:inline-block;transform:perspective(340px) rotateY(-13deg);transform-origin:left center;
+  }
+
+  /* projection checklist — connected strip on desktop, wrapping chips on small screens */
+  .plot{
+    list-style:none;display:flex;flex-wrap:wrap;border:1.5px solid var(--teal);
+    width:fit-content;max-width:100%;margin:0 0 22px;
+  }
+  .plot li{
+    font:600 15px/1 var(--sans);text-transform:uppercase;letter-spacing:.03em;color:#54706a;
+    padding:7px 11px;border-left:1.5px solid var(--teal);white-space:nowrap;
+  }
+  .plot li:first-child{border-left:0;}
+  .plot li.done{color:var(--teal);font-weight:800;}
+  .plot li.on{background:var(--amber);color:var(--ink);font-weight:800;}
+  @media(max-width:560px){
+    .plot{border:0;gap:6px;}
+    .plot li{border:1.5px solid var(--teal);}
+  }
+
+  .sub{
+    font:600 15px/1 var(--sans);text-transform:uppercase;letter-spacing:.04em;
+    color:#33514b;margin:0 0 10px;
+  }
 
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;}
   .grid > div{min-width:0;}
   @media(max-width:880px){.grid{grid-template-columns:1fr;}}
 
-  .step-title{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:650;color:var(--ink);margin-bottom:18px;}
-  .step-title.between{justify-content:space-between;flex-wrap:wrap;row-gap:10px;}
-  .step-title .lead{display:flex;align-items:center;gap:10px;}
-  .step-num{
-    width:26px;height:26px;border-radius:50%;flex-shrink:0;
-    background:var(--accent-soft);color:var(--accent-dark);
-    font-size:12px;font-weight:700;display:grid;place-items:center;
+  /* dropzone = the projector stage */
+  .window{
+    border:1.5px dashed var(--teal-line);background:var(--teal-wash);
+    padding:38px 20px;text-align:center;cursor:pointer;
+    transition:border-color .12s var(--ease),background .12s var(--ease);
   }
-
-  .drop{
-    border:1.5px dashed rgba(0,113,227,.35);border-radius:var(--r-md);
-    padding:44px 20px;text-align:center;cursor:pointer;
-    background:rgba(0,113,227,.045);
-    transition:border-color .2s var(--ease),background .2s var(--ease),transform .2s var(--ease);
+  .window:hover,.window.drag{border-style:solid;border-color:var(--teal);background:rgba(28,63,58,.11);}
+  .window .tile{color:var(--teal);width:46px;height:34px;margin:0 auto 12px;display:block;}
+  .window b{display:block;font:800 15px/1.35 var(--sans);color:var(--ink);margin-bottom:4px;}
+  .window small{
+    font:600 15px/1 var(--sans);color:var(--teal);text-transform:uppercase;letter-spacing:.03em;
   }
-  .drop:hover,.drop.drag{border-color:var(--accent);background:rgba(0,113,227,.09);}
-  @media(hover:hover){.drop:hover{transform:translateY(-2px);}}
-  .drop .tile{
-    width:56px;height:56px;border-radius:16px;margin:0 auto 14px;
-    display:grid;place-items:center;font-size:22px;color:#fff;
-    background:linear-gradient(135deg,var(--accent-2),var(--accent));
-    box-shadow:0 6px 18px -4px rgba(0,113,227,.5);
-  }
-  .drop b{font-size:15px;color:var(--ink);font-weight:600;}
-  .drop small{color:var(--ink-muted);font-size:13px;display:block;margin-top:4px;}
   input[type=file]{display:none;}
 
-  .preview-frame{background:#f5f5f7;border-radius:var(--r-md);padding:8px;border:1px solid var(--hairline);}
-  .preview-img{width:100%;border-radius:calc(var(--r-md) - 5px);display:block;}
+  /* image sits on a true-neutral screen; chrome adds no colour cast */
+  .plate-mat{background:var(--screen);border:1.5px solid var(--teal);padding:9px;}
+  .preview-img{display:block;width:100%;border-radius:0;}
+  #origImg{width:auto;max-width:100%;max-height:380px;margin:0 auto;}
+  #adjImg{width:auto;max-width:100%;max-height:520px;margin:0 auto;}
+  .register-bed{
+    width:100%;border:1.5px solid var(--teal);display:block;
+    cursor:crosshair;touch-action:none;background:var(--screen);
+  }
 
+  /* projector control keys */
   .btn{
-    border:none;border-radius:14px;padding:13px 22px;font-size:15px;font-weight:590;
-    cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:9px;
-    transition:transform .12s var(--ease),box-shadow .2s var(--ease),background .2s var(--ease),color .2s var(--ease),opacity .2s var(--ease);
-    font-family:inherit;
+    font:800 15px/1 var(--sans);text-transform:uppercase;letter-spacing:.03em;
+    padding:11px 16px;border:1.5px solid var(--teal);background:var(--room);color:var(--teal);
+    cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    position:relative;border-radius:0;font-family:var(--sans);
+    transition:transform .1s var(--ease),background .12s var(--ease),color .12s var(--ease);
   }
-  .btn-main{
-    background:linear-gradient(180deg,var(--accent-2),var(--accent));color:#fff;width:100%;
-    box-shadow:0 1px 2px rgba(0,113,227,.3),0 10px 22px -8px rgba(0,113,227,.6);
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn:active:not(:disabled){transform:translateY(1px);}
+  .btn.block{width:100%;}
+  .btn.sm{padding:8px 12px;}
+  .btn.xs{padding:7px 9px;letter-spacing:0;}
+  @media(hover:hover){
+    .btn:hover:not(:disabled):not(.btn-main):not(.active):not(.preset-on){background:var(--teal-wash);}
   }
-  @media(hover:hover){.btn-main:hover:not(:disabled){filter:brightness(1.06);}}
-  .btn-main:active:not(:disabled){transform:scale(.97);}
-  .btn-main:disabled{background:#c7c7cc;box-shadow:none;cursor:not-allowed;opacity:.8;}
-  .btn-ghost{background:var(--glass);border:1px solid var(--hairline);color:var(--ink);backdrop-filter:blur(10px);}
-  @media(hover:hover){.btn-ghost:hover:not(:disabled){background:var(--glass-strong);border-color:rgba(0,113,227,.32);color:var(--accent);}}
-  .btn-ghost:active:not(:disabled){transform:scale(.96);}
-  .btn-ghost:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-main{background:var(--teal);color:var(--screen);border-color:var(--teal);}
+  .btn-main::before{
+    content:"";width:9px;height:9px;border-radius:50%;background:var(--amber);flex:0 0 auto;
+    border:1.5px solid #8f5415;
+    transition:transform .12s var(--ease),background .12s var(--ease);
+  }
+  @media(hover:hover){.btn-main:hover:not(:disabled){background:var(--teal-2);}}
+  .btn-main:active:not(:disabled)::before{transform:scale(1.3);background:#e79a3d;}
+  .btn-main:disabled{background:var(--teal-line);border-color:var(--teal-line);color:var(--room);}
+  .btn-main:disabled::before{background:var(--room);border-color:rgba(255,255,255,.4);}
+  .btn.preset-on{background:var(--teal);color:var(--screen);border-color:var(--teal);}
 
-  .icon-row{display:flex;gap:8px;flex-wrap:wrap;}
-
-  .tabs{display:flex;gap:4px;padding:4px;background:var(--track);border-radius:12px;overflow-x:auto;scrollbar-width:none;}
-  .tabs::-webkit-scrollbar{display:none;}
-  .tab{
-    flex:0 0 auto;text-align:center;padding:9px 14px;border-radius:9px;
-    font-size:13px;font-weight:590;color:var(--ink-muted);cursor:pointer;white-space:nowrap;
-    display:inline-flex;align-items:center;gap:7px;
-    transition:background .2s var(--ease),color .2s var(--ease),box-shadow .2s var(--ease);
-  }
-  .tab.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14),0 1px 1px rgba(0,0,0,.06);}
-  @media(hover:hover){.tab:hover:not(.active){color:var(--ink);}}
-
-  .badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:650;padding:6px 12px;border-radius:20px;}
-  .badge.ok{background:var(--success-soft);color:var(--success);}
-  .badge.no{background:var(--danger-soft);color:var(--danger);}
-  .badge.warn{background:var(--warn-soft);color:var(--warn);}
-
-  .slider-row{margin:20px 0;}
-  .slider-row label{display:flex;justify-content:space-between;font-size:14px;font-weight:500;color:var(--ink);margin-bottom:10px;}
-  .slider-row label b{color:var(--accent);font-variant-numeric:tabular-nums;font-weight:650;}
-  input[type=range]{
-    -webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;
-    background:var(--track);outline:none;
-  }
-  input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;
-    border:1px solid rgba(0,0,0,.06);cursor:pointer;margin-top:-9px;
-    box-shadow:0 2px 6px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.03);
-    transition:transform .12s var(--ease);
-  }
-  input[type=range]::-webkit-slider-thumb:active{transform:scale(1.15);}
-  input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--track);}
-  input[type=range]::-moz-range-thumb{
-    width:20px;height:20px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.06);
-    cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.28);
-  }
-
-  .actions{display:flex;gap:12px;margin-top:22px;}
+  .icon-row{display:flex;gap:6px;flex-wrap:wrap;}
+  .icon-row .btn{padding:9px 11px;font-size:13px;letter-spacing:0;}
+  .actions{display:flex;gap:10px;margin-top:20px;}
   .actions .btn{flex:1;}
+  #scanBtn{margin-top:16px;}
 
-  .spinner{display:none;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);
-    border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+  .spinner{
+    display:none;width:14px;height:14px;border:2px solid rgba(251,250,246,.4);
+    border-top-color:var(--screen);border-radius:50%;animation:spin .7s linear infinite;
+  }
+  .btn:not(.btn-main) .spinner{border-color:rgba(28,63,58,.35);border-top-color:var(--teal);}
   @keyframes spin{to{transform:rotate(360deg);}}
   .loading .spinner{display:inline-block;}
 
-  .hidden{display:none;}
-  .hint{color:var(--ink-muted);font-size:13px;margin-top:12px;line-height:1.6;}
-  footer{text-align:center;color:var(--ink-faint);font-size:12px;margin-top:52px;padding-top:24px;border-top:1px solid var(--hairline);}
+  /* projection-log badges */
+  .badge{
+    display:inline-flex;align-items:center;gap:6px;font:400 15px/1.2 var(--sans);
+    text-transform:uppercase;letter-spacing:.02em;color:var(--teal);
+    padding:1px 0 3px;border-bottom:1.5px solid currentColor;white-space:nowrap;
+  }
+  .badge i{display:none;}
+  .badge::before{content:"";width:6px;height:6px;background:currentColor;flex:0 0 auto;}
+  .badge + .badge{margin-left:14px;}
+  .badge.no{color:var(--alert);}
+  .badge.warn::before{background:transparent;border:1.5px solid currentColor;}
 
-  .corner-canvas{width:100%;border-radius:var(--r-md);border:1px solid var(--hairline);
-    display:block;cursor:crosshair;touch-action:none;box-shadow:var(--shadow-sm);}
+  /* focus-scale sliders */
+  .slider-row{margin:15px 0;}
+  .slider-row label{
+    display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+    font:800 15px/1 var(--sans);text-transform:uppercase;letter-spacing:.03em;color:var(--teal);margin-bottom:10px;
+  }
+  .slider-row label b{
+    font:800 15px/1 var(--sans);color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:0;text-transform:none;
+  }
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;background:transparent;cursor:pointer;}
+  input[type=range]::-webkit-slider-runnable-track{
+    height:3px;border-radius:0;
+    background:
+      repeating-linear-gradient(90deg,rgba(28,63,58,.34) 0 1px,transparent 1px 10%),
+      linear-gradient(90deg,var(--teal) var(--fill,50%),var(--teal-line) var(--fill,50%));
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:4px;height:16px;margin-top:-6.5px;
+    background:var(--teal);border:0;border-radius:0;
+  }
+  input[type=range]::-moz-range-track{
+    height:3px;border-radius:0;
+    background:repeating-linear-gradient(90deg,rgba(28,63,58,.34) 0 1px,transparent 1px 10%),var(--teal-line);
+  }
+  input[type=range]::-moz-range-progress{height:3px;background:var(--teal);}
+  input[type=range]::-moz-range-thumb{width:4px;height:16px;background:var(--teal);border:0;border-radius:0;}
+  input[type=range]:focus-visible{outline-offset:6px;}
+
+  .hint{color:var(--teal);font:400 15px/1.55 var(--sans);margin-top:12px;}
+  .hint b{font-weight:800;}
+
+  footer{
+    border-top:1.5px solid var(--teal);color:var(--teal);
+    font:600 15px/1.5 var(--sans);text-transform:uppercase;letter-spacing:.04em;
+    margin-top:46px;padding-top:16px;
+  }
+
+  .hidden{display:none;}
+
+  /* Beranda job ticket */
+  .ticket-sub{
+    font:600 15px/1.5 var(--sans);text-transform:uppercase;letter-spacing:.04em;
+    color:#33514b;margin:-8px 0 14px;
+  }
+  .ticket-steps{list-style:none;counter-reset:s;margin:16px 0 24px;}
+  .ticket-steps li{
+    counter-increment:s;position:relative;padding:9px 0 9px 34px;
+    border-top:1.5px solid var(--teal-line);font:400 15px/1.5 var(--sans);color:var(--ink);
+  }
+  .ticket-steps li:last-child{border-bottom:1.5px solid var(--teal-line);}
+  .ticket-steps li::before{
+    content:counter(s,decimal-leading-zero);position:absolute;left:0;top:9px;
+    font:800 15px/1.5 var(--sans);color:var(--teal);font-variant-numeric:tabular-nums;
+  }
+
+  /* film-roll ledger (Riwayat) */
+  .ledger{display:flex;flex-direction:column;border-top:1.5px solid var(--teal);}
+  .ledger-row{
+    display:grid;grid-template-columns:auto 46px minmax(0,1fr) auto;align-items:center;gap:14px;
+    padding:10px 2px;border-bottom:1.5px solid var(--teal-line);
+  }
+  .lr-no{font:800 15px/1 var(--sans);color:var(--teal);font-variant-numeric:tabular-nums;letter-spacing:.02em;}
+  .lr-thumb{
+    width:46px;height:46px;object-fit:cover;border:1.5px solid var(--teal);
+    background:var(--screen);cursor:zoom-in;display:block;
+  }
+  .lr-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0;}
+  .lr-meta time{font:400 15px/1 var(--sans);color:var(--ink);font-variant-numeric:tabular-nums;}
+  .lr-act{display:flex;gap:5px;}
+
+  /* proof viewer */
+  #lightbox{position:fixed;inset:0;z-index:100;background:rgba(22,21,18,.74);display:grid;place-items:center;padding:5vw;}
+  #lightbox.hidden{display:none;}
+  #lightbox img{max-width:100%;max-height:100%;border:7px solid var(--screen);border-radius:0;}
+  #lbClose{
+    position:absolute;top:18px;right:18px;width:38px;height:38px;
+    border:1.5px solid var(--screen);background:transparent;color:var(--screen);
+    cursor:pointer;border-radius:0;font-size:15px;
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;}
+    .sheet.projecting{animation:none;}
+  }
+  @media(max-width:640px){
+    .btn,.nav-btn,.tab{letter-spacing:0;}
+    .nav-btn{padding:8px 10px;}
+    .plot li{padding:7px 9px;}
+  }
+  @media(max-width:560px){
+    .regbar-in{padding:12px 16px;}
+    .wrap{padding:24px 16px 64px;}
+    .sheet{padding:20px 18px;}
+    .wordmark{font-size:18px;}
+  }
 </style>
 </head>
 <body>
+<svg class="keystone-mark" viewBox="0 0 200 150" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+  <path d="M40 18 L172 40 L162 132 L28 112 Z"/>
+  <rect x="46" y="30" width="108" height="86"/>
+  <path d="M40 18 L46 30 M172 40 L154 30 M162 132 L154 116 M28 112 L46 116" stroke-dasharray="3 3"/>
+</svg>
+
+<header class="regbar">
+  <div class="regbar-in">
+    <span class="wordmark"><span class="lamp" aria-hidden="true"></span>ScanBook</span>
+    <nav class="nav" id="nav">
+      <button class="nav-btn active" data-view="home">Beranda</button>
+      <button class="nav-btn" data-view="scan">Pindai</button>
+      <button class="nav-btn" data-view="history">Riwayat</button>
+    </nav>
+  </div>
+</header>
+
 <div class="wrap">
-  <header class="app-header">
-    <div class="brand">
-      <span class="brand-icon"><i class="fa-solid fa-book-open"></i></span>
-      <span class="brand-name">ScanBook</span>
-      <p>Pengolahan Citra · Deteksi Tepi Buku · Efek Scanner · Kontras &amp; Saturasi</p>
-    </div>
-  </header>
+
+  <!-- BERANDA -->
+  <div id="homeView">
+    <section class="sheet">
+      <h1 class="plate-head">Foto buku &rarr; hasil scan rapi</h1>
+      <p class="ticket-sub">Pengolahan Citra · Deteksi Tepi Buku · Efek Scanner · Kontras &amp; Saturasi</p>
+      <p class="hint">ScanBook mendeteksi 4 sudut halaman dengan model ML (fallback klasik), meluruskan perspektif, lalu Anda pilih filter dan atur warna sebelum mengunduh. Semua diproses lokal &mdash; tanpa akun, tanpa unggah ke cloud.</p>
+      <ol class="ticket-steps">
+        <li>Unggah foto halaman (JPG / PNG, maks 16 MB)</li>
+        <li>Periksa &amp; seret 4 titik sudut, terapkan koreksi perspektif</li>
+        <li>Pilih filter pindai, atur kontras / warna, lalu unduh</li>
+      </ol>
+      <button class="btn btn-main" id="homeStartBtn">Mulai Memindai</button>
+    </section>
+    <section class="sheet hidden" id="homeRecentCard">
+      <div class="plate-head between">
+        <span>Arsip Terakhir</span>
+        <button class="btn sm" id="homeSeeAll">Lihat semua</button>
+      </div>
+      <div id="homeRecent" class="ledger"></div>
+    </section>
+  </div>
+
+  <!-- PINDAI -->
+  <div id="scanView" class="hidden">
+  <ol class="plot" id="plot">
+    <li data-plate="1" class="on">01 Unggah</li>
+    <li data-plate="2">02 Luruskan</li>
+    <li data-plate="3">03 Atur</li>
+    <li data-plate="4">04 Unduh</li>
+  </ol>
 
   <!-- STEP 1: UPLOAD -->
-  <div class="card">
-    <div class="step-title"><span class="step-num">1</span> Unggah Gambar Buku</div>
+  <section class="sheet">
+    <h2 class="plate-head"><span class="plate-no">01</span> Unggah Gambar Buku</h2>
     <div class="grid">
       <div>
-        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Unggah gambar">
-          <div class="tile"><i class="fa-solid fa-cloud-arrow-up"></i></div>
-          <div><b>Klik atau seret gambar ke sini</b></div>
+        <div class="window" id="drop" tabindex="0" role="button" aria-label="Unggah gambar">
+          <svg class="tile" viewBox="0 0 46 34" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M7 4 L42 8 L38 31 L4 27 Z"/>
+            <path d="M7 4 L4 27 M42 8 L38 31" stroke-dasharray="2.5 2.5"/>
+          </svg>
+          <b>Klik atau seret gambar ke sini</b>
           <small>Format JPG / PNG · maksimal 16 MB</small>
         </div>
         <input type="file" id="file" accept="image/*">
-        <button class="btn btn-main" id="scanBtn" style="margin-top:16px;" disabled>
-          <span class="spinner"></span><i class="fa-solid fa-magnifying-glass"></i><span class="lbl">Deteksi Tepi &amp; Scan</span>
+        <button class="btn btn-main block" id="scanBtn" disabled>
+          <span class="spinner"></span><span class="lbl">Deteksi Tepi &amp; Scan</span>
         </button>
         <p class="hint">Sistem mendeteksi 4 sudut buku dengan Canny + kontur, lalu mengoreksi perspektif agar lurus seperti hasil scanner.</p>
       </div>
       <div>
-        <div class="step-title" style="font-size:13px;color:var(--ink-muted);font-weight:600;margin-bottom:12px;">Pratinjau</div>
-        <div class="preview-frame">
+        <p class="sub">Pratinjau</p>
+        <div class="plate-mat">
           <img id="origImg" class="preview-img" alt="Belum ada gambar"
-               src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='280'%3E%3Crect width='100%25' height='100%25' fill='%23f5f5f7'/%3E%3Ctext x='50%25' y='50%25' fill='%23a1a1a6' font-family='sans-serif' font-size='15' text-anchor='middle' dy='.3em'%3EPratinjau gambar%3C/text%3E%3C/svg%3E">
+               src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='280'%3E%3Crect width='100%25' height='100%25' fill='%23eceadf'/%3E%3Ctext x='50%25' y='50%25' fill='%231c3f3a' font-family='sans-serif' font-size='14' text-anchor='middle' dy='.3em'%3EPratinjau gambar%3C/text%3E%3C/svg%3E">
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
   <!-- STEP 2: HASIL -->
-  <div class="card hidden" id="resultCard">
-    <div class="step-title between">
-      <span class="lead"><span class="step-num">2</span> Hasil Deteksi</span>
+  <section class="sheet hidden" id="resultCard">
+    <div class="plate-head between">
+      <span class="lead"><span class="plate-no">02</span> Hasil Deteksi</span>
       <span id="statusBadge"></span>
     </div>
     <div class="tabs" id="tabs">
-      <div class="tab active" data-key="overlay" role="tab" tabindex="0"><i class="fa-solid fa-vector-square"></i> Sesuaikan Tepi</div>
-      <div class="tab" data-key="nobg" role="tab" tabindex="0"><i class="fa-solid fa-eraser"></i> Tanpa Latar</div>
-      <div class="tab" data-key="edges" role="tab" tabindex="0"><i class="fa-solid fa-bolt"></i> Peta Tepi (Canny)</div>
-      <div class="tab" data-key="scanned" role="tab" tabindex="0"><i class="fa-solid fa-file-image"></i> Hasil Scan</div>
-      <div class="tab" data-key="scan_bw" role="tab" tabindex="0"><i class="fa-solid fa-print"></i> Mode Scanner B/W</div>
+      <div class="tab active" data-key="overlay" role="tab" tabindex="0">Sesuaikan Tepi</div>
+      <div class="tab" data-key="nobg" role="tab" tabindex="0">Tanpa Latar</div>
+      <div class="tab" data-key="edges" role="tab" tabindex="0">Peta Tepi</div>
+      <div class="tab" data-key="scanned" role="tab" tabindex="0">Hasil Scan</div>
+      <div class="tab" data-key="scan_bw" role="tab" tabindex="0">Scanner B/W</div>
     </div>
 
-    <!-- Canvas interaktif untuk tab overlay -->
+    <!-- Panggung interaktif untuk tab overlay -->
     <div id="canvasWrap" style="position:relative;margin-top:16px;">
-      <canvas id="cornerCanvas" class="corner-canvas"></canvas>
+      <canvas id="cornerCanvas" class="register-bed"></canvas>
       <div class="icon-row" id="orientCanvasTabs" style="margin-top:12px;">
-        <button class="btn btn-ghost" data-rot="ccw" title="Putar kiri 90°"><i class="fa-solid fa-rotate-left"></i></button>
-        <button class="btn btn-ghost" data-rot="cw" title="Putar kanan 90°"><i class="fa-solid fa-rotate-right"></i></button>
-        <button class="btn btn-ghost" data-rot="180" title="Putar 180°"><i class="fa-solid fa-arrows-rotate"></i></button>
-        <button class="btn btn-ghost" data-rot="fliph" title="Cermin horizontal"><i class="fa-solid fa-arrows-left-right"></i></button>
-        <button class="btn btn-ghost" data-rot="flipv" title="Cermin vertikal"><i class="fa-solid fa-arrows-up-down"></i></button>
+        <button class="btn" data-rot="ccw" title="Putar kiri 90°" aria-label="Putar kiri 90°"><i class="fa-solid fa-rotate-left"></i></button>
+        <button class="btn" data-rot="cw" title="Putar kanan 90°" aria-label="Putar kanan 90°"><i class="fa-solid fa-rotate-right"></i></button>
+        <button class="btn" data-rot="180" title="Putar 180°" aria-label="Putar 180°"><i class="fa-solid fa-arrows-rotate"></i></button>
+        <button class="btn" data-rot="fliph" title="Cermin horizontal" aria-label="Cermin horizontal"><i class="fa-solid fa-arrows-left-right"></i></button>
+        <button class="btn" data-rot="flipv" title="Cermin vertikal" aria-label="Cermin vertikal"><i class="fa-solid fa-arrows-up-down"></i></button>
       </div>
       <div class="actions">
-        <button class="btn btn-main" id="applyWarpBtn"><i class="fa-solid fa-crop-simple"></i> Terapkan Koreksi</button>
-        <button class="btn btn-ghost" id="resetCornersBtn"><i class="fa-solid fa-rotate-left"></i> Reset Titik</button>
+        <button class="btn btn-main" id="applyWarpBtn"><span class="spinner"></span><span class="lbl">Terapkan Koreksi</span></button>
+        <button class="btn" id="resetCornersBtn"><i class="fa-solid fa-rotate-left"></i> Reset Titik</button>
       </div>
-      <p class="hint">Seret titik sudut biru untuk menyesuaikan area dokumen. Gunakan tombol orientasi untuk memutar/mencerminkan gambar bila foto miring, lalu klik <b>Terapkan Koreksi</b>.</p>
+      <p class="hint">Seret titik sudut untuk menyesuaikan area dokumen. Gunakan tombol orientasi untuk memutar/mencerminkan gambar bila foto miring, lalu klik <b>Terapkan Koreksi</b>.</p>
     </div>
 
     <!-- Gambar biasa untuk tab lain -->
-    <div class="preview-frame hidden" id="resultImgFrame" style="margin-top:16px;">
+    <div class="plate-mat hidden" id="resultImgFrame" style="margin-top:16px;">
       <img id="resultImg" class="preview-img" alt="hasil">
     </div>
     <p class="hint" id="resultHint"></p>
-  </div>
+  </section>
 
   <!-- STEP 3: ADJUST -->
-  <div class="card hidden" id="adjustCard">
-    <div class="step-title"><span class="step-num">3</span> Atur Kontras &amp; Saturasi Warna</div>
+  <section class="sheet hidden" id="adjustCard">
+    <h2 class="plate-head"><span class="plate-no">03</span> Atur Kontras &amp; Saturasi Warna</h2>
     <div class="grid">
       <div>
-        <div class="preview-frame">
+        <div class="plate-mat">
           <img id="adjImg" class="preview-img" alt="adjusted">
         </div>
       </div>
       <div>
-        <div class="step-title" style="font-size:13px;color:var(--ink-muted);font-weight:600;margin-bottom:10px;">Orientasi Gambar</div>
+        <p class="sub">Orientasi Gambar</p>
         <div class="icon-row" id="orientTabs" style="margin-bottom:20px;">
-          <button class="btn btn-ghost" data-rot="ccw" title="Putar kiri 90°"><i class="fa-solid fa-rotate-left"></i></button>
-          <button class="btn btn-ghost" data-rot="cw" title="Putar kanan 90°"><i class="fa-solid fa-rotate-right"></i></button>
-          <button class="btn btn-ghost" data-rot="180" title="Putar 180°"><i class="fa-solid fa-arrows-rotate"></i></button>
-          <button class="btn btn-ghost" data-rot="fliph" title="Cermin horizontal"><i class="fa-solid fa-arrows-left-right"></i></button>
-          <button class="btn btn-ghost" data-rot="flipv" title="Cermin vertikal"><i class="fa-solid fa-arrows-up-down"></i></button>
+          <button class="btn" data-rot="ccw" title="Putar kiri 90°" aria-label="Putar kiri 90°"><i class="fa-solid fa-rotate-left"></i></button>
+          <button class="btn" data-rot="cw" title="Putar kanan 90°" aria-label="Putar kanan 90°"><i class="fa-solid fa-rotate-right"></i></button>
+          <button class="btn" data-rot="180" title="Putar 180°" aria-label="Putar 180°"><i class="fa-solid fa-arrows-rotate"></i></button>
+          <button class="btn" data-rot="fliph" title="Cermin horizontal" aria-label="Cermin horizontal"><i class="fa-solid fa-arrows-left-right"></i></button>
+          <button class="btn" data-rot="flipv" title="Cermin vertikal" aria-label="Cermin vertikal"><i class="fa-solid fa-arrows-up-down"></i></button>
         </div>
 
-        <div class="step-title" style="font-size:13px;color:var(--ink-muted);font-weight:600;margin-bottom:10px;">Mode Output</div>
+        <p class="sub">Filter Pindai</p>
+        <div class="icon-row" id="filterPresets" style="margin-bottom:20px;">
+          <button class="btn" data-preset="asli"><i class="fa-solid fa-image"></i> Asli</button>
+          <button class="btn" data-preset="auto"><i class="fa-solid fa-wand-magic-sparkles"></i> Otomatis</button>
+          <button class="btn" data-preset="magic"><i class="fa-solid fa-palette"></i> Warna Magic</button>
+          <button class="btn" data-preset="gray"><i class="fa-solid fa-circle-half-stroke"></i> Abu-abu</button>
+          <button class="btn" data-preset="bw"><i class="fa-solid fa-print"></i> Teks B/W</button>
+        </div>
+
+        <p class="sub">Mode Output</p>
         <div class="tabs" id="modeTabs" style="margin-bottom:20px;">
-          <div class="tab active" data-mode="color" role="tab" tabindex="0"><i class="fa-solid fa-palette"></i> Berwarna</div>
-          <div class="tab" data-mode="gray" role="tab" tabindex="0"><i class="fa-solid fa-circle-half-stroke"></i> Grayscale</div>
-          <div class="tab" data-mode="bw" role="tab" tabindex="0"><i class="fa-solid fa-print"></i> Hitam-Putih Scanner</div>
+          <div class="tab active" data-mode="color" role="tab" tabindex="0">Berwarna</div>
+          <div class="tab" data-mode="gray" role="tab" tabindex="0">Grayscale</div>
+          <div class="tab" data-mode="bw" role="tab" tabindex="0">Hitam-Putih Scanner</div>
         </div>
 
         <div class="slider-row">
@@ -337,16 +499,34 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           <input type="range" id="threshold" min="3" max="25" step="1" value="10">
         </div>
         <div class="actions">
-          <button class="btn btn-ghost" id="resetBtn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
-          <button class="btn btn-main" id="dlBtn"><i class="fa-solid fa-download"></i> Unduh Hasil</button>
+          <button class="btn" id="resetBtn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+          <button class="btn btn-main" id="dlBtn">Unduh Hasil</button>
         </div>
         <p class="hint" id="modeHint">Kontras &amp; kecerahan diterapkan langsung pada piksel, saturasi diatur lewat kanal S pada ruang warna HSV.</p>
         <p class="hint">Pintasan: <b>R</b> putar kanan · <b>Shift+R</b> putar kiri · <b>F</b> cermin horizontal.</p>
       </div>
     </div>
+  </section>
+  </div><!-- /PINDAI -->
+
+  <!-- RIWAYAT -->
+  <div id="historyView" class="hidden">
+    <section class="sheet">
+      <div class="plate-head between">
+        <span>Riwayat Pindai</span>
+        <button class="btn" id="clearHistBtn"><i class="fa-solid fa-trash"></i> Hapus Semua</button>
+      </div>
+      <p class="hint" id="histEmpty" style="margin-top:0;">Belum ada hasil tersimpan. Riwayat dibuat otomatis setiap kali Anda mengunduh hasil, dan hanya disimpan di browser ini.</p>
+      <div id="histGrid" class="ledger"></div>
+    </section>
   </div>
 
   <footer>ScanBook · Flask + OpenCV · Pengolahan Citra Digital</footer>
+</div>
+
+<div id="lightbox" class="hidden" role="dialog" aria-modal="true" aria-label="Pratinjau riwayat">
+  <button id="lbClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+  <img id="lbImg" alt="Pratinjau riwayat">
 </div>
 
 <script>
@@ -389,8 +569,9 @@ $('scanBtn').onclick=async()=>{
     const d=await res.json();
     if(d.error){alert(d.error);return;}
     results=d; scannedB64=d.scanned;
+    $('scanBtn').classList.remove('btn-main');
     $('resultCard').classList.remove('hidden');
-    $('adjustCard').classList.remove('hidden');
+    $('resultCard').classList.add('projecting');
 
     const isML = (d.method||'').startsWith('ml');
     const methodBadge = isML
@@ -405,15 +586,16 @@ $('scanBtn').onclick=async()=>{
 
     initCanvas(originalB64, d.corners, d.orig_size[0], d.orig_size[1]);
     showTab('overlay');
-    // siapkan tahap adjust dengan hasil scan
+    setPlate(2);
+    // siapkan tahap adjust dengan hasil scan (kartu Atur muncul setelah koreksi diterapkan)
     $('adjImg').src=scannedB64;
     resetSliders();
-    $('adjustCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+    $('resultCard').scrollIntoView({behavior:'smooth',block:'nearest'});
   }catch(e){alert('Gagal memproses: '+e);}
   finally{btn.classList.remove('loading');btn.disabled=false;btn.querySelector('.lbl').textContent='Deteksi Tepi & Scan';}
 };
 
-// ---- Canvas corner editor ----
+// ---- Canvas corner editor (panggung keystone) ----
 const cvsEl = $('cornerCanvas');
 const cvsCtx = cvsEl.getContext('2d');
 let cvsImg = new Image();
@@ -443,33 +625,36 @@ function cvsDraw() {
   if (!corners.length) return;
 
   const pts = corners.map(([x,y]) => [x*drawScale, y*drawScale]);
+  const TEAL = '#1c3f3a', SCREEN = '#fbfaf6';
 
-  // Polygon fill + stroke
+  // projected frame: faint fill + straight edges under tension
   cvsCtx.beginPath();
   cvsCtx.moveTo(pts[0][0], pts[0][1]);
   pts.slice(1).forEach(p => cvsCtx.lineTo(p[0], p[1]));
   cvsCtx.closePath();
-  cvsCtx.fillStyle = 'rgba(0,113,227,0.14)';
+  cvsCtx.fillStyle = 'rgba(28,63,58,0.08)';
   cvsCtx.fill();
-  cvsCtx.strokeStyle = '#0071e3';
-  cvsCtx.lineWidth = 2;
+  cvsCtx.strokeStyle = TEAL;
+  cvsCtx.lineWidth = 1.5;
   cvsCtx.stroke();
 
-  // Handles
+  // keystone pins
   const labels = ['TL','TR','BR','BL'];
   pts.forEach(([x,y], i) => {
+    cvsCtx.fillStyle = SCREEN;
+    cvsCtx.strokeStyle = TEAL;
+    cvsCtx.lineWidth = 1.5;
+    cvsCtx.beginPath(); cvsCtx.arc(x, y, HANDLE_R, 0, Math.PI*2); cvsCtx.fill(); cvsCtx.stroke();
     cvsCtx.beginPath();
-    cvsCtx.arc(x, y, HANDLE_R, 0, Math.PI*2);
-    cvsCtx.fillStyle = '#0071e3';
-    cvsCtx.fill();
-    cvsCtx.strokeStyle = '#fff';
-    cvsCtx.lineWidth = 2;
+    cvsCtx.moveTo(x-HANDLE_R-3, y); cvsCtx.lineTo(x+HANDLE_R+3, y);
+    cvsCtx.moveTo(x, y-HANDLE_R-3); cvsCtx.lineTo(x, y+HANDLE_R+3);
     cvsCtx.stroke();
-    cvsCtx.fillStyle = '#fff';
-    cvsCtx.font = 'bold 10px sans-serif';
+    cvsCtx.fillStyle = TEAL;
+    cvsCtx.beginPath(); cvsCtx.arc(x, y, 2.4, 0, Math.PI*2); cvsCtx.fill();
+    cvsCtx.font = '800 10px "Hanken Grotesk", sans-serif';
     cvsCtx.textAlign = 'center';
     cvsCtx.textBaseline = 'middle';
-    cvsCtx.fillText(labels[i], x, y);
+    cvsCtx.fillText(labels[i], x, y + (i < 2 ? -(HANDLE_R+13) : (HANDLE_R+13)));
   });
 }
 
@@ -551,8 +736,8 @@ $('orientCanvasTabs').addEventListener('click', async e => {
 
 $('applyWarpBtn').onclick = async () => {
   const btn = $('applyWarpBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+  btn.classList.add('loading'); btn.disabled = true;
+  btn.querySelector('.lbl').textContent = 'Memproses...';
   try {
     const res = await fetch('/warp', {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -566,10 +751,15 @@ $('applyWarpBtn').onclick = async () => {
     $('adjImg').src  = scannedB64;
     resetSliders();
     showTab('scanned');
+    btn.classList.remove('btn-main');
+    $('adjustCard').classList.remove('hidden');
+    $('adjustCard').classList.add('projecting');
+    setPlate(3);
+    $('adjustCard').scrollIntoView({behavior:'smooth',block:'nearest'});
   } catch(e) { alert('Gagal: '+e); }
   finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-crop-simple"></i> Terapkan Koreksi';
+    btn.classList.remove('loading'); btn.disabled = false;
+    btn.querySelector('.lbl').textContent = 'Terapkan Koreksi';
   }
 };
 
@@ -596,11 +786,11 @@ function showTab(key){
   }
 }
 
-// ---- Slider fill (iOS-style filled track) ----
+// ---- Slider fill (focus-scale) ----
 function paintRange(el){
   const min=parseFloat(el.min), max=parseFloat(el.max), val=parseFloat(el.value);
   const pct=((val-min)/(max-min))*100;
-  el.style.background=`linear-gradient(to right, var(--accent) ${pct}%, var(--track) ${pct}%)`;
+  el.style.setProperty('--fill', pct+'%');
 }
 
 // ---- Adjust (debounced) ----
@@ -668,6 +858,7 @@ $('orientTabs').addEventListener('click', e=>{
 
 // Pintasan keyboard: R = putar kanan, Shift+R = putar kiri, F = cermin horizontal
 document.addEventListener('keydown', e=>{
+  if($('scanView').classList.contains('hidden'))return;
   if($('adjustCard').classList.contains('hidden'))return;
   const tag=(e.target.tagName||'').toLowerCase();
   if(tag==='input'||tag==='textarea'||e.target.isContentEditable)return;
@@ -693,7 +884,131 @@ $('dlBtn').onclick=()=>{
   const a=document.createElement('a');
   const suffix={color:'berwarna',gray:'grayscale',bw:'hitamputih'}[adjustMode]||'hasil';
   a.href=$('adjImg').src; a.download='scanbook_'+suffix+'.png'; a.click();
+  addHist($('adjImg').src, adjustMode);
+  setPlate(4);
 };
+
+// ==== Navigasi tampilan (Beranda / Pindai / Riwayat) ====
+function showView(v){
+  ['home','scan','history'].forEach(n=>$(n+'View').classList.toggle('hidden',n!==v));
+  document.querySelectorAll('#nav .nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  if(v==='history')renderHist();
+  if(v==='scan' && $('resultCard').classList.contains('hidden'))setPlate(1);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+$('nav').addEventListener('click',e=>{
+  const t=e.target.closest('.nav-btn'); if(t)showView(t.dataset.view);
+});
+$('homeStartBtn').onclick=()=>showView('scan');
+$('homeSeeAll').onclick=()=>showView('history');
+
+// ==== Checklist plot ====
+function setPlate(n){
+  document.querySelectorAll('#plot li').forEach(li=>{
+    const p=+li.dataset.plate;
+    li.classList.toggle('on',p===n);
+    li.classList.toggle('done',p<n);
+  });
+}
+
+// ==== Filter pindai: preset cepat di atas kontrol yang sudah ada ====
+const PRESETS={
+  asli :{mode:'color',contrast:1,   saturation:1,   brightness:0},
+  auto :{mode:'color',contrast:1.35,saturation:1.05,brightness:12},
+  magic:{mode:'color',contrast:1.5, saturation:1.35,brightness:15},
+  gray :{mode:'gray', contrast:1.15,saturation:1,   brightness:8},
+  bw   :{mode:'bw',   contrast:1,   saturation:1,   brightness:0,threshold:12},
+};
+function applyPreset(name){
+  const p=PRESETS[name]; if(!p)return;
+  adjustMode=p.mode;
+  document.querySelectorAll('#modeTabs .tab').forEach(x=>x.classList.toggle('active',x.dataset.mode===p.mode));
+  $('satRow').classList.toggle('hidden',p.mode!=='color');
+  $('threshRow').classList.toggle('hidden',p.mode!=='bw');
+  $('modeHint').textContent=modeHints[p.mode];
+  $('contrast').value=p.contrast; $('saturation').value=p.saturation; $('brightness').value=p.brightness;
+  if(p.threshold!=null)$('threshold').value=p.threshold;
+  $('cVal').textContent=Number(p.contrast).toFixed(2)+'×';
+  $('sVal').textContent=Number(p.saturation).toFixed(2)+'×';
+  $('bVal').textContent=String(p.brightness);
+  $('tVal').textContent=$('threshold').value;
+  ['contrast','saturation','brightness','threshold'].forEach(id=>paintRange($(id)));
+  document.querySelectorAll('#filterPresets button').forEach(b=>b.classList.toggle('preset-on',b.dataset.preset===name));
+  applyAdjust();
+}
+$('filterPresets').addEventListener('click',e=>{
+  const t=e.target.closest('button[data-preset]'); if(t)applyPreset(t.dataset.preset);
+});
+
+// ==== Riwayat (disimpan di localStorage browser ini saja) ====
+// ponytail: localStorage ~5MB — simpan JPEG 1400px + batas 12 entri + buang terlama saat kuota penuh.
+//           pindah ke IndexedDB kalau butuh full-res atau riwayat panjang.
+const HKEY='scanbook_history', HSEQ='scanbook_hist_seq', HCAP=12;
+const MODE_LBL={color:'Berwarna',gray:'Grayscale',bw:'Hitam-Putih'};
+function loadHist(){try{return JSON.parse(localStorage.getItem(HKEY))||[];}catch(e){return[];}}
+function saveHist(a){
+  for(let n=a.length;n>=0;n--){
+    try{localStorage.setItem(HKEY,JSON.stringify(a.slice(0,n)));return a.slice(0,n);}
+    catch(e){/* kuota penuh: ulangi dengan entri lebih sedikit */}
+  }
+  return [];
+}
+function nextSeq(){
+  let n=parseInt(localStorage.getItem(HSEQ)||'0',10); if(!Number.isFinite(n))n=0;
+  n+=1; try{localStorage.setItem(HSEQ,String(n));}catch(e){}
+  return n;
+}
+function addHist(dataUrl,mode){
+  const img=new Image();
+  img.onload=()=>{
+    try{
+      const m=Math.max(img.width,img.height)||1, s=Math.min(1,1400/m);
+      const c=document.createElement('canvas');
+      c.width=Math.round(img.width*s)||1; c.height=Math.round(img.height*s)||1;
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      const small=c.toDataURL('image/jpeg',0.82);
+      saveHist([{id:Date.now(),no:nextSeq(),ts:Date.now(),mode,img:small},...loadHist()].slice(0,HCAP));
+      renderHist();
+    }catch(err){console.warn('riwayat gagal disimpan',err);}
+  };
+  img.src=dataUrl;
+}
+function histCard(it){
+  const d=new Date(it.ts).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
+  const no=it.no!=null ? String(it.no).padStart(3,'0') : '—';
+  return '<div class="ledger-row" data-id="'+it.id+'">'
+    +'<span class="lr-no">F-'+no+'</span>'
+    +'<img class="lr-thumb" src="'+it.img+'" alt="Hasil '+(MODE_LBL[it.mode]||'')+'" data-act="view">'
+    +'<span class="lr-meta"><time>'+d+'</time><span class="badge ok">'+(MODE_LBL[it.mode]||'Hasil')+'</span></span>'
+    +'<span class="lr-act">'
+      +'<button class="btn xs" data-act="dl" title="Unduh" aria-label="Unduh"><i class="fa-solid fa-download"></i></button>'
+      +'<button class="btn xs" data-act="del" title="Hapus" aria-label="Hapus"><i class="fa-solid fa-trash"></i></button>'
+    +'</span>'
+  +'</div>';
+}
+function renderHist(){
+  const a=loadHist();
+  $('histEmpty').classList.toggle('hidden',a.length>0);
+  $('histGrid').innerHTML=a.map(histCard).join('');
+  $('homeRecentCard').classList.toggle('hidden',a.length===0);
+  $('homeRecent').innerHTML=a.slice(0,4).map(histCard).join('');
+}
+function histClick(e){
+  const item=e.target.closest('.ledger-row'); if(!item)return;
+  const id=Number(item.dataset.id), it=loadHist().find(x=>x.id===id); if(!it)return;
+  const hit=e.target.closest('[data-act]'), act=hit?hit.dataset.act:'view';
+  if(act==='dl'){const x=document.createElement('a');x.href=it.img;x.download='scanbook_riwayat_'+it.id+'.jpg';x.click();}
+  else if(act==='del'){saveHist(loadHist().filter(x=>x.id!==id));renderHist();}
+  else{$('lbImg').src=it.img;$('lightbox').classList.remove('hidden');}
+}
+$('histGrid').addEventListener('click',histClick);
+$('homeRecent').addEventListener('click',histClick);
+$('clearHistBtn').onclick=()=>{if(confirm('Hapus semua riwayat?')){localStorage.removeItem(HKEY);renderHist();}};
+$('lbClose').onclick=()=>$('lightbox').classList.add('hidden');
+$('lightbox').addEventListener('click',e=>{if(e.target.id==='lightbox')$('lightbox').classList.add('hidden');});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('lightbox').classList.add('hidden');});
+
+renderHist();
 </script>
 </body>
 </html>
