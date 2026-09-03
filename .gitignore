@@ -97,3 +97,6 @@ ehthumbs.db
 .mypy_cache/
 .ruff_cache/
 graphify-out/
+
+.vercel
+.env*
