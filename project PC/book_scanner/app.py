@@ -12,7 +12,9 @@ import numpy as np
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
+# User-facing upload cap is 16 MB (raw file), enforced client-side. The request
+# body is a base64 data URL inside JSON (~1.35x), so allow headroom here.
+app.config['MAX_CONTENT_LENGTH'] = 24 * 1024 * 1024  # 24 MB
 
 
 # ----------------------------------------------------------------------------
