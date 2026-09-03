@@ -12,7 +12,7 @@ import os
 import sys
 
 _APP_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), os.pardir, "project PC", "book_scanner")
+    os.path.join(os.path.dirname(__file__), os.pardir, "project-pc", "book_scanner")
 )
 if _APP_DIR not in sys.path:
     sys.path.insert(0, _APP_DIR)
