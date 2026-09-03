@@ -100,3 +100,8 @@ graphify-out/
 
 .vercel
 .env*
+
+# Node (Railway tooling)
+node_modules/
+package-lock.json
+.railway/
