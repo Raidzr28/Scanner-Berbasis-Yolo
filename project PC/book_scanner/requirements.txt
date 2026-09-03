@@ -1,4 +1,14 @@
+# Full deployment (Railway / any container host) — includes the YOLO stack.
+# Vercel uses the ML-free requirements.txt at the repo root instead.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 flask
 opencv-python-headless
 numpy
 pillow
+
+torch
+torchvision
+ultralytics==8.4.75
+
+gunicorn==23.0.0
