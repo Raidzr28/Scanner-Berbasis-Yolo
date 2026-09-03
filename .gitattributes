@@ -1,0 +1,7 @@
+# Deploy/runtime files execute on Linux — keep LF regardless of checkout OS.
+Procfile        text eol=lf
+*.sh            text eol=lf
+*.py            text eol=lf
+*.json          text eol=lf
+.python-version text eol=lf
+requirements.txt text eol=lf
