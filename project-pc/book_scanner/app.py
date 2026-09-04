@@ -17,16 +17,34 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 24 * 1024 * 1024  # 24 MB
 
 
+@app.after_request
+def _security_headers(resp):
+    resp.headers['X-Content-Type-Options'] = 'nosniff'
+    resp.headers['X-Frame-Options'] = 'DENY'
+    resp.headers['Referrer-Policy'] = 'no-referrer'
+    return resp
+
+
 # ----------------------------------------------------------------------------
 # Util: konversi gambar <-> base64
 # ----------------------------------------------------------------------------
-def b64_to_cv2(data_url: str):
-    """Decode data URL base64 menjadi gambar OpenCV (BGR)."""
+def b64_to_cv2(data_url):
+    """Decode data URL base64 menjadi gambar OpenCV (BGR). None bila input tak valid."""
+    if not isinstance(data_url, str):
+        return None
     if ',' in data_url:
         data_url = data_url.split(',', 1)[1]
-    raw = base64.b64decode(data_url)
+    try:
+        raw = base64.b64decode(data_url)
+    except ValueError:  # includes binascii.Error (bad padding / chars)
+        return None
+    if not raw:
+        return None
     arr = np.frombuffer(raw, np.uint8)
-    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    try:
+        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    except cv2.error:
+        return None
     return img
 
 
@@ -379,8 +397,8 @@ def index():
 @app.route('/scan', methods=['POST'])
 def scan():
     """Deteksi tepi + koreksi perspektif. Mengembalikan beberapa hasil."""
-    data = request.get_json()
-    img = b64_to_cv2(data['image'])
+    data = request.get_json(silent=True) or {}
+    img = b64_to_cv2(data.get('image'))
     if img is None:
         return jsonify({'error': 'Gambar tidak valid'}), 400
 
@@ -430,8 +448,8 @@ def scan():
 @app.route('/adjust', methods=['POST'])
 def adjust():
     """Sesuaikan kontras, saturasi, kecerahan pada gambar ter-scan."""
-    data = request.get_json()
-    img = b64_to_cv2(data['image'])
+    data = request.get_json(silent=True) or {}
+    img = b64_to_cv2(data.get('image'))
     if img is None:
         return jsonify({'error': 'Gambar tidak valid'}), 400
 
@@ -454,8 +472,8 @@ def adjust():
 @app.route('/rotate', methods=['POST'])
 def rotate():
     """Ubah orientasi gambar (putar/cermin) pada gambar ter-scan."""
-    data = request.get_json()
-    img = b64_to_cv2(data['image'])
+    data = request.get_json(silent=True) or {}
+    img = b64_to_cv2(data.get('image'))
     if img is None:
         return jsonify({'error': 'Gambar tidak valid'}), 400
 
@@ -467,12 +485,15 @@ def rotate():
 @app.route('/warp', methods=['POST'])
 def warp():
     """Koreksi perspektif manual dengan 4 titik sudut dari user."""
-    data = request.get_json()
-    img = b64_to_cv2(data['image'])
+    data = request.get_json(silent=True) or {}
+    img = b64_to_cv2(data.get('image'))
     if img is None:
         return jsonify({'error': 'Gambar tidak valid'}), 400
 
-    pts = np.array(data['corners'], dtype='float32')
+    try:
+        pts = np.array(data.get('corners'), dtype='float32').reshape(4, 2)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Titik sudut tidak valid'}), 400
     warped = four_point_transform(img, pts)
     scan_bw = scanner_effect(warped)
     return jsonify({
